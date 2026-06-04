@@ -1,6 +1,3 @@
-CREATE DATABASE IF NOT EXISTS ehr_db CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE ehr_db;
-
 -- 1. Users Table (Extended with Biological Sex for baseline AI weights)
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -11,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Comprehensive Clinical EHR Table
+-- 2. Comprehensive Clinical EHR Table (Fully Optimized with MAP & XAI Metrics)
 CREATE TABLE IF NOT EXISTS ehr_records (
     id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT NOT NULL,
@@ -21,16 +18,20 @@ CREATE TABLE IF NOT EXISTS ehr_records (
     bmi DECIMAL(4,2) NOT NULL,
     systolic_bp INT NOT NULL,
     diastolic_bp INT NOT NULL,
+    map_mmhg INT NOT NULL,                                        -- Bio-Mathematical Metric
     blood_glucose INT NOT NULL,
     heart_rate INT NOT NULL,
-    hba1c DECIMAL(3,1) NOT NULL,                         -- 3-Month Diabetes Marker
-    cholesterol_mgdl INT NOT NULL,                       -- Cardiovascular Triad Parameter
+    hba1c DECIMAL(3,1) NOT NULL,                                  -- 3-Month Diabetes Marker
+    cholesterol_mgdl INT NOT NULL,                                -- Cardiovascular Triad Parameter
     smoking_status ENUM('Never', 'Former', 'Active') NOT NULL DEFAULT 'Never', -- Lifestyle Co-factor
     nation VARCHAR(100) NOT NULL,
     birth DATE NOT NULL,
     rnn_prediction VARCHAR(255) DEFAULT 'No Risk Detected',
+    glucose_impact_pct INT DEFAULT 0,                             -- Explainable AI (XAI) Weight
+    cardio_impact_pct INT DEFAULT 0,                              -- Explainable AI (XAI) Weight
+    lifestyle_impact_pct INT DEFAULT 0,                           -- Explainable AI (XAI) Weight
     prediction_status ENUM('Pending Approval', 'Approved') DEFAULT 'Pending Approval',
-    doctor_notes TEXT DEFAULT NULL,                       -- Administrative Epikriz/Reçete
+    doctor_notes TEXT DEFAULT NULL,                               -- Physician Progress Directives
     recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE
 );
