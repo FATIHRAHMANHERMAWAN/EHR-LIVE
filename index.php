@@ -13,6 +13,13 @@ $ehrManager = new EhrManager($db);
 $userId = $_SESSION['user_id'];
 $userRole = $auth->getRole();
 
+// Grab active sorting parameters from URL safely
+$currentSort = $_GET['sort'] ?? 'recorded_at';
+$currentOrder = $_GET['order'] ?? 'DESC';
+
+// Toggle variable helper for inverted sorting state redirection links
+$toggleOrder = (strtoupper($currentOrder) === 'ASC') ? 'DESC' : 'ASC';
+
 // Controller Actions
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_ehr']) && $userRole === 'patient') {
     $age = (int)$_POST['age'];
@@ -33,7 +40,8 @@ if (isset($_GET['delete_id']) && $userRole === 'doctor') {
     exit;
 }
 
-$records = $ehrManager->readRecords($userId, $userRole);
+// Fetch records with variable parameters appended
+$records = $ehrManager->readRecords($userId, $userRole, $currentSort, $currentOrder);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -119,15 +127,17 @@ $records = $ehrManager->readRecords($userId, $userRole);
                                 <table class="table table-striped align-middle shadow-sm rounded">
                                     <thead class="table-dark">
                                         <tr>
-                                            <?php if($userRole === 'doctor'): ?> <th>Patient</th> <?php endif; ?>
-                                            <th>Age</th>
-                                            <th>Nation</th>
-                                            <th>Birth Date</th>
-                                            <th>BMI</th>
+                                            <?php if($userRole === 'doctor'): ?> 
+                                                <th><a href="index.php?sort=patient_name&order=<?= $toggleOrder ?>" class="text-white text-decoration-none">Patient ⇅</a></th> 
+                                            <?php endif; ?>
+                                            <th><a href="index.php?sort=age&order=<?= $toggleOrder ?>" class="text-white text-decoration-none">Age ⇅</a></th>
+                                            <th><a href="index.php?sort=nation&order=<?= $toggleOrder ?>" class="text-white text-decoration-none">Nation ⇅</a></th>
+                                            <th><a href="index.php?sort=birth&order=<?= $toggleOrder ?>" class="text-white text-decoration-none">Birth Date ⇅</a></th>
+                                            <th><a href="index.php?sort=bmi&order=<?= $toggleOrder ?>" class="text-white text-decoration-none">BMI ⇅</a></th>
                                             <th>Blood Pressure</th>
-                                            <th>Glucose</th>
-                                            <th>Pulse</th>
-                                            <th>Timestamp</th>
+                                            <th><a href="index.php?sort=blood_glucose&order=<?= $toggleOrder ?>" class="text-white text-decoration-none">Glucose ⇅</a></th>
+                                            <th><a href="index.php?sort=heart_rate&order=<?= $toggleOrder ?>" class="text-white text-decoration-none">Pulse ⇅</a></th>
+                                            <th><a href="index.php?sort=recorded_at&order=<?= $toggleOrder ?>" class="text-white text-decoration-none">Timestamp ⇅</a></th>
                                             <?php if($userRole === 'doctor'): ?> <th class="text-center">Actions</th> <?php endif; ?>
                                         </tr>
                                     </thead>

@@ -24,16 +24,33 @@ class EhrManager {
         return $stmt->execute();
     }
 
-    public function readRecords($user_id, $role) {
+    // Extended with strict whitelist sorting variables
+    public function readRecords($user_id, $role, $sort = 'recorded_at', $order = 'DESC') {
         if ($role === 'doctor') {
+            // Security Whitelist: Prevents SQL Injection through unquoted column structures
+            $allowed_sort_columns = ['patient_name', 'age', 'nation', 'birth', 'bmi', 'systolic_bp', 'diastolic_bp', 'blood_glucose', 'heart_rate', 'recorded_at'];
+            if (!in_array($sort, $allowed_sort_columns)) {
+                $sort = 'recorded_at';
+            }
+
+            // Sanitize direction keywords
+            $order = (strtoupper($order) === 'ASC') ? 'ASC' : 'DESC';
+
+            // Resolve ambiguous column names or virtual joined aliases
+            $target_field = ($sort === 'patient_name') ? "u.username" : "e." . $sort;
+
             $query = "SELECT e.*, u.username as patient_name FROM " . $this->table . " e 
-                      JOIN users u ON e.patient_id = u.id ORDER BY e.recorded_at DESC";
+                      JOIN users u ON e.patient_id = u.id 
+                      ORDER BY " . $target_field . " " . $order;
+            
             $stmt = $this->db->prepare($query);
         } else {
+            // Patients see their own records chronologically
             $query = "SELECT * FROM " . $this->table . " WHERE patient_id = :user_id ORDER BY recorded_at DESC";
             $stmt = $this->db->prepare($query);
             $stmt->bindParam(":user_id", $user_id);
         }
+        
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
