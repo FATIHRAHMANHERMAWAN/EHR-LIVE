@@ -1,4 +1,4 @@
-=<?php
+<?php
 require_once 'classes/Database.php';
 require_once 'classes/Auth.php';
 require_once 'classes/EhrManager.php';
@@ -18,7 +18,7 @@ $item = $ehrManager->readOne($_GET['id']);
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $ehrManager->updateRecord(
-        $_GET['id'], $_POST['age'], $_POST['bmi'], $_POST['systolic_bp'], 
+        $_GET['id'], $_POST['age'], $_POST['weight_kg'], $_POST['height_cm'], $_POST['systolic_bp'], 
         $_POST['diastolic_bp'], $_POST['blood_glucose'], $_POST['heart_rate'],
         $_POST['nation'], $_POST['birth']
     );
@@ -53,9 +53,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <label class="form-label">Birth Date</label>
                                 <input type="date" name="birth" class="form-control" value="<?= $item['birth'] ?>" required>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">BMI</label>
-                                <input type="number" step="0.01" name="bmi" class="form-control" value="<?= $item['bmi'] ?>" required>
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label class="form-label">Weight (kg)</label>
+                                    <input type="number" step="0.1" name="weight_kg" class="form-control" value="<?= $item['weight_kg'] ?>" required>
+                                </div>
+                                <div class="col">
+                                    <label class="form-label">Height (cm)</label>
+                                    <input type="number" step="0.1" name="height_cm" class="form-control" value="<?= $item['height_cm'] ?>" required>
+                                </div>
                             </div>
                             <div class="row mb-3">
                                 <div class="col">
