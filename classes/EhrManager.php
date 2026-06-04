@@ -7,9 +7,9 @@ class EhrManager {
         $this->db = $db;
     }
 
-    public function createRecord($patient_id, $age, $bmi, $systolic, $diastolic, $glucose, $heart_rate) {
-        $query = "INSERT INTO " . $this->table . " (patient_id, age, bmi, systolic_bp, diastolic_bp, blood_glucose, heart_rate) 
-                  VALUES (:patient_id, :age, :bmi, :systolic, :diastolic, :glucose, :heart_rate)";
+    public function createRecord($patient_id, $age, $bmi, $systolic, $diastolic, $glucose, $heart_rate, $nation, $birth) {
+        $query = "INSERT INTO " . $this->table . " (patient_id, age, bmi, systolic_bp, diastolic_bp, blood_glucose, heart_rate, nation, birth) 
+                  VALUES (:patient_id, :age, :bmi, :systolic, :diastolic, :glucose, :heart_rate, :nation, :birth)";
         $stmt = $this->db->prepare($query);
         
         $stmt->bindParam(":patient_id", $patient_id);
@@ -19,6 +19,8 @@ class EhrManager {
         $stmt->bindParam(":diastolic", $diastolic);
         $stmt->bindParam(":glucose", $glucose);
         $stmt->bindParam(":heart_rate", $heart_rate);
+        $stmt->bindParam(":nation", $nation);
+        $stmt->bindParam(":birth", $birth);
         return $stmt->execute();
     }
 
@@ -44,9 +46,9 @@ class EhrManager {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function updateRecord($id, $age, $bmi, $systolic, $diastolic, $glucose, $heart_rate) {
+    public function updateRecord($id, $age, $bmi, $systolic, $diastolic, $glucose, $heart_rate, $nation, $birth) {
         $query = "UPDATE " . $this->table . " 
-                  SET age = :age, bmi = :bmi, systolic_bp = :systolic, diastolic_bp = :diastolic, blood_glucose = :glucose, heart_rate = :heart_rate 
+                  SET age = :age, bmi = :bmi, systolic_bp = :systolic, diastolic_bp = :diastolic, blood_glucose = :glucose, heart_rate = :heart_rate, nation = :nation, birth = :birth 
                   WHERE id = :id";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(":age", $age);
@@ -55,6 +57,8 @@ class EhrManager {
         $stmt->bindParam(":diastolic", $diastolic);
         $stmt->bindParam(":glucose", $glucose);
         $stmt->bindParam(":heart_rate", $heart_rate);
+        $stmt->bindParam(":nation", $nation);
+        $stmt->bindParam(":birth", $birth);
         $stmt->bindParam(":id", $id);
         return $stmt->execute();
     }

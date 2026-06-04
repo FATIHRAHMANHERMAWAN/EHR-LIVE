@@ -15,9 +15,16 @@ $userRole = $auth->getRole();
 
 // Controller Actions
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_ehr']) && $userRole === 'patient') {
-    $ehrManager->createRecord($userId, $_POST['age'], $_POST['bmi'], $_POST['systolic_bp'], $_POST['diastolic_bp'], $_POST['blood_glucose'], $_POST['heart_rate']);
-    header("Location: index.php");
-    exit;
+    $age = (int)$_POST['age'];
+    if($age >= 0 && $age <= 120) {
+        $ehrManager->createRecord(
+            $userId, $age, $_POST['bmi'], $_POST['systolic_bp'], 
+            $_POST['diastolic_bp'], $_POST['blood_glucose'], $_POST['heart_rate'],
+            $_POST['nation'], $_POST['birth']
+        );
+        header("Location: index.php");
+        exit;
+    }
 }
 
 if (isset($_GET['delete_id']) && $userRole === 'doctor') {
@@ -58,8 +65,16 @@ $records = $ehrManager->readRecords($userId, $userRole);
                         <h5 class="card-title text-primary mb-3">Input Vitals (RNN Input Data)</h5>
                         <form method="POST" action="">
                             <div class="mb-2">
-                                <label class="form-label small">Age</label>
-                                <input type="number" name="age" class="form-control" required>
+                                <label class="form-label small">Age (0 - 120)</label>
+                                <input type="number" name="age" class="form-control" min="0" max="120" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">Nation / Nationality</label>
+                                <input type="text" name="nation" class="form-control" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">Birth Date</label>
+                                <input type="date" name="birth" class="form-control" required>
                             </div>
                             <div class="mb-2">
                                 <label class="form-label small">BMI (Body Mass Index)</label>
@@ -67,11 +82,11 @@ $records = $ehrManager->readRecords($userId, $userRole);
                             </div>
                             <div class="row mb-2">
                                 <div class="col">
-                                    <label class="form-label small">Systolic BP (Büyük)</label>
+                                    <label class="form-label small">Systolic BP</label>
                                     <input type="number" name="systolic_bp" class="form-control" required>
                                 </div>
                                 <div class="col">
-                                    <label class="form-label small">Diastolic BP (Küçük)</label>
+                                    <label class="form-label small">Diastolic BP</label>
                                     <input type="number" name="diastolic_bp" class="form-control" required>
                                 </div>
                             </div>
@@ -106,6 +121,8 @@ $records = $ehrManager->readRecords($userId, $userRole);
                                         <tr>
                                             <?php if($userRole === 'doctor'): ?> <th>Patient</th> <?php endif; ?>
                                             <th>Age</th>
+                                            <th>Nation</th>
+                                            <th>Birth Date</th>
                                             <th>BMI</th>
                                             <th>Blood Pressure</th>
                                             <th>Glucose</th>
@@ -121,6 +138,8 @@ $records = $ehrManager->readRecords($userId, $userRole);
                                                     <td><strong><?= htmlspecialchars($row['patient_name']) ?></strong></td>
                                                 <?php endif; ?>
                                                 <td><?= $row['age'] ?></td>
+                                                <td><?= htmlspecialchars($row['nation']) ?></td>
+                                                <td><?= $row['birth'] ?></td>
                                                 <td><?= $row['bmi'] ?></td>
                                                 <td><span class="badge bg-secondary"><?= $row['systolic_bp'] ?>/<?= $row['diastolic_bp'] ?></span></td>
                                                 <td><span class="badge <?= $row['blood_glucose'] > 125 ? 'bg-danger' : 'bg-success' ?>"><?= $row['blood_glucose'] ?> mg/dL</span></td>

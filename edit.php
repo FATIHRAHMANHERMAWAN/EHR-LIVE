@@ -1,4 +1,4 @@
-<?php
+=<?php
 require_once 'classes/Database.php';
 require_once 'classes/Auth.php';
 require_once 'classes/EhrManager.php';
@@ -17,7 +17,11 @@ if (!isset($_GET['id'])) { header("Location: index.php"); exit; }
 $item = $ehrManager->readOne($_GET['id']);
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $ehrManager->updateRecord($_GET['id'], $_POST['age'], $_POST['bmi'], $_POST['systolic_bp'], $_POST['diastolic_bp'], $_POST['blood_glucose'], $_POST['heart_rate']);
+    $ehrManager->updateRecord(
+        $_GET['id'], $_POST['age'], $_POST['bmi'], $_POST['systolic_bp'], 
+        $_POST['diastolic_bp'], $_POST['blood_glucose'], $_POST['heart_rate'],
+        $_POST['nation'], $_POST['birth']
+    );
     header("Location: index.php");
     exit;
 }
@@ -39,7 +43,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <form method="POST" action="">
                             <div class="mb-3">
                                 <label class="form-label">Age</label>
-                                <input type="number" name="age" class="form-control" value="<?= $item['age'] ?>" required>
+                                <input type="number" name="age" class="form-control" value="<?= $item['age'] ?>" min="0" max="120" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Nation</label>
+                                <input type="text" name="nation" class="form-control" value="<?= htmlspecialchars($item['nation']) ?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Birth Date</label>
+                                <input type="date" name="birth" class="form-control" value="<?= $item['birth'] ?>" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">BMI</label>

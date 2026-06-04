@@ -19,6 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if ($auth->register($username, $password, $role)) {
         $status = "success";
         $message = "Registration successful! You can now log in.";
+
+        //otomatik login sayfasina gitmek
+        header("Location: login.php");
+        exit;
+
     } else {
         $status = "danger";
         $message = "Username already exists or invalid data.";
