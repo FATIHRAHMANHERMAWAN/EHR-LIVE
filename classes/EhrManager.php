@@ -8,17 +8,18 @@ class EhrManager {
     }
 
     public function createRecord($patient_id, $age, $weight, $height, $systolic, $diastolic, $glucose, $heart_rate, $hba1c, $cholesterol, $smoking, $nation, $birth) {
+        // 1. BMI Hesaplama
         $heightMeters = $height / 100;
         $bmi = round($weight / ($heightMeters * $heightMeters), 2);
 
-        // Fetch patient biological sex context from session data
-        $gender = $_SESSION['gender'] ?? 'Male';
+        // 2. Dinamik Klinik MAP Hesaplama
+        $map = round(($systolic + (2 * $diastolic)) / 3);
 
-        // Calculate custom time-series risk vectors
-        $simulatedPrediction = $this->evaluateAdvancedSequentialRisk($patient_id, $bmi, $systolic, $glucose, $hba1c, $cholesterol, $smoking, $gender);
+        // 3. Yapay Zeka Risk ve XAI (Açıklanabilir AI) Katkı Payı Hesaplama
+        $xai = $this->calculateXAIWeights($bmi, $systolic, $map, $glucose, $hba1c, $cholesterol, $smoking);
 
-        $query = "INSERT INTO " . $this->table . " (patient_id, age, weight_kg, height_cm, bmi, systolic_bp, diastolic_bp, blood_glucose, heart_rate, hba1c, cholesterol_mgdl, smoking_status, nation, birth, rnn_prediction, prediction_status) 
-                  VALUES (:patient_id, :age, :weight, :height, :bmi, :systolic, :diastolic, :glucose, :heart_rate, :hba1c, :cholesterol, :smoking, :nation, :birth, :prediction, 'Pending Approval')";
+        $query = "INSERT INTO " . $this->table . " (patient_id, age, weight_kg, height_cm, bmi, systolic_bp, diastolic_bp, map_mmhg, blood_glucose, heart_rate, hba1c, cholesterol_mgdl, smoking_status, nation, birth, rnn_prediction, glucose_impact_pct, cardio_impact_pct, lifestyle_impact_pct, prediction_status) 
+                  VALUES (:patient_id, :age, :weight, :height, :bmi, :systolic, :diastolic, :map, :glucose, :heart_rate, :hba1c, :cholesterol, :smoking, :nation, :birth, :prediction, :g_pct, :c_pct, :l_pct, 'Pending Approval')";
         
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(":patient_id", $patient_id);
@@ -28,6 +29,7 @@ class EhrManager {
         $stmt->bindParam(":bmi", $bmi);
         $stmt->bindParam(":systolic", $systolic);
         $stmt->bindParam(":diastolic", $diastolic);
+        $stmt->bindParam(":map", $map);
         $stmt->bindParam(":glucose", $glucose);
         $stmt->bindParam(":heart_rate", $heart_rate);
         $stmt->bindParam(":hba1c", $hba1c);
@@ -35,41 +37,37 @@ class EhrManager {
         $stmt->bindParam(":smoking", $smoking);
         $stmt->bindParam(":nation", $nation);
         $stmt->bindParam(":birth", $birth);
-        $stmt->bindParam(":prediction", $simulatedPrediction);
+        $stmt->bindParam(":prediction", $xai['prediction']);
+        $stmt->bindParam(":g_pct", $xai['g_pct']);
+        $stmt->bindParam(":c_pct", $xai['c_pct']);
+        $stmt->bindParam(":l_pct", $xai['l_pct']);
         
         return $stmt->execute();
     }
 
-    private function evaluateAdvancedSequentialRisk($patient_id, $bmi, $systolic, $glucose, $hba1c, $cholesterol, $smoking, $gender) {
-        // Query historical time-series layers to check trend directions
-        $query = "SELECT systolic_bp, blood_glucose, hba1c FROM " . $this->table . " WHERE patient_id = :id ORDER BY recorded_at DESC LIMIT 2";
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(":id", $patient_id);
-        $stmt->execute();
-        $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    private function calculateXAIWeights($bmi, $systolic, $map, $glucose, $hba1c, $cholesterol, $smoking) {
+        $g_weight = 0; $c_weight = 0; $l_weight = 0;
 
-        $riskScore = 0;
+        // Risk Faktörleri Ağırlık Dağılımı
+        if ($glucose > 125 || $hba1c >= 6.5) { $g_weight += 45; }
+        if ($systolic > 130 || $map > 100 || $cholesterol > 200) { $c_weight += 45; }
+        if ($bmi >= 25.0) { $l_weight += 15; }
+        if ($smoking === 'Active') { $l_weight += 20; }
+
+        $total = $g_weight + $c_weight + $l_weight;
         
-        // Base parameter weights
-        if ($glucose > 125 || $hba1c >= 6.5) { $riskScore += 3; }
-        if ($systolic > 130 || $cholesterol > 200) { $riskScore += 3; }
-        if ($bmi >= 25.0) { $riskScore += 1; }
-        if ($smoking === 'Active') { $riskScore += 2; }
-        if ($gender === 'Female' && $systolic > 130) { $riskScore += 1; } // Sex-specific cardiovascular weighting
-
-        // Longitudinal evaluation pass (Simulating Hidden State transitions of an RNN)
-        foreach($history as $past) {
-            if ($past['blood_glucose'] > 125 || $past['systolic_bp'] > 130) {
-                $riskScore += 1.5; 
-            }
+        if($total == 0) {
+            return ['prediction' => 'Low Risk', 'g_pct' => 0, 'c_pct' => 0, 'l_pct' => 0];
         }
 
-        if ($riskScore >= 6) {
-            return "High Risk: Chronic Diabetes & Hypertension Sequence Pattern Confirmed.";
-        } elseif ($riskScore >= 3) {
-            return "Moderate Risk: Elevated Metabolic / Cardiovascular Activity Detected.";
-        }
-        return "Low Risk: Normal Physiological Continuity Verified.";
+        // Değerleri Göreceli Yüzdelere Normalize Etme (SHAP/LIME mantığı)
+        $g_pct = round(($g_weight / $total) * 100);
+        $c_pct = round(($c_weight / $total) * 100);
+        $l_pct = round(($l_weight / $total) * 100);
+
+        $prediction = ($total >= 50) ? "High Risk Pattern" : "Moderate Risk Pattern";
+
+        return ['prediction' => $prediction, 'g_pct' => $g_pct, 'c_pct' => $c_pct, 'l_pct' => $l_pct];
     }
 
     public function processDoctorReview($record_id, $status, $notes) {
@@ -111,9 +109,10 @@ class EhrManager {
     public function updateRecord($id, $age, $weight, $height, $systolic, $diastolic, $glucose, $heart_rate, $hba1c, $cholesterol, $smoking, $nation, $birth) {
         $heightMeters = $height / 100;
         $bmi = round($weight / ($heightMeters * $heightMeters), 2);
+        $map = round(($systolic + (2 * $diastolic)) / 3);
 
         $query = "UPDATE " . $this->table . " 
-                  SET age = :age, weight_kg = :weight, height_cm = :height, bmi = :bmi, systolic_bp = :systolic, diastolic_bp = :diastolic, blood_glucose = :glucose, heart_rate = :heart_rate, hba1c = :hba1c, cholesterol_mgdl = :cholesterol, smoking_status = :smoking, nation = :nation, birth = :birth 
+                  SET age = :age, weight_kg = :weight, height_cm = :height, bmi = :bmi, systolic_bp = :systolic, diastolic_bp = :diastolic, map_mmhg = :map, blood_glucose = :glucose, heart_rate = :heart_rate, hba1c = :hba1c, cholesterol_mgdl = :cholesterol, smoking_status = :smoking, nation = :nation, birth = :birth 
                   WHERE id = :id";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(":age", $age);
@@ -122,6 +121,7 @@ class EhrManager {
         $stmt->bindParam(":bmi", $bmi);
         $stmt->bindParam(":systolic", $systolic);
         $stmt->bindParam(":diastolic", $diastolic);
+        $stmt->bindParam(":map", $map);
         $stmt->bindParam(":glucose", $glucose);
         $stmt->bindParam(":heart_rate", $heart_rate);
         $stmt->bindParam(":hba1c", $hba1c);
