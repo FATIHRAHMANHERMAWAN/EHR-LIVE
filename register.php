@@ -15,15 +15,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = $_POST['username'];
     $password = $_POST['password'];
     $role = $_POST['role'];
+    $gender = $_POST['gender'];
 
-    if ($auth->register($username, $password, $role)) {
-        $status = "success";
-        $message = "Registration successful! You can now log in.";
-
-        //otomatik login sayfasina gitmek
+    if ($auth->register($username, $password, $role, $gender)) {
         header("Location: login.php");
         exit;
-
     } else {
         $status = "danger";
         $message = "Username already exists or invalid data.";
@@ -43,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="col-md-5">
                 <div class="card shadow border-0">
                     <div class="card-body p-4">
-                        <h3 class="card-title text-center text-primary mb-4">Create Account</h3>
+                        <h3 class="card-title text-center text-primary mb-4">Create EHR Account</h3>
                         <?php if($message): ?>
                             <div class="alert alert-<?= $status ?> text-center"><?= $message ?></div>
                         <?php endif; ?>
@@ -56,12 +52,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <label class="form-label">Password</label>
                                 <input type="password" name="password" class="form-control" required>
                             </div>
-                            <div class="mb-4">
-                                <label class="form-label">Account Type (Role)</label>
-                                <select name="role" class="form-select" required>
-                                    <option value="patient">Patient (Enter Medical Data)</option>
-                                    <option value="doctor">Medical Staff / Doctor</option>
-                                </select>
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label class="form-label">Biological Sex</label>
+                                    <select name="gender" class="form-select" required>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <label class="form-label">Account Type</label>
+                                    <select name="role" class="form-select" required>
+                                        <option value="patient">Patient (Input Data)</option>
+                                        <option value="doctor">Medical Staff / Doctor</option>
+                                    </select>
+                                </div>
                             </div>
                             <button type="submit" class="btn btn-primary w-100 mb-3">Sign Up</button>
                             <p class="text-center small mb-0">Already have an account? <a href="login.php" class="text-decoration-none">Login here</a></p>

@@ -5,34 +5,28 @@ class Auth {
 
     public function __construct($db) {
         $this->db = $db;
-        if (session_status() === PHP_SESSION_NONE) { 
-            session_start(); 
-        }
+        if (session_status() === PHP_SESSION_NONE) { session_start(); }
     }
 
-    public function register($username, $password, $role = 'patient') {
-    try {
-        $query = "INSERT INTO " . $this->table . " (username, password, role) VALUES (:username, :password, :role)";
-        $stmt = $this->db->prepare($query);
-        
-        $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-        
-        $stmt->bindParam(":username", $username);
-        $stmt->bindParam(":password", $hashed_password);
-        $stmt->bindParam(":role", $role);
-        
-        return $stmt->execute();
-    } catch (PDOException $e) {
-        // Eğer hata kodu 23000 ise (Duplicate Entry / Çift Kayıt durumu)
-        if ($e->getCode() == 23000) {
-            return false; // Kodun çökmesini engelle ve register.php'ye false dön
+    public function register($username, $password, $role = 'patient', $gender = 'Male') {
+        try {
+            $query = "INSERT INTO " . $this->table . " (username, password, role, gender) VALUES (:username, :password, :role, :gender)";
+            $stmt = $this->db->prepare($query);
+            $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+            
+            $stmt->bindParam(":username", $username);
+            $stmt->bindParam(":password", $hashed_password);
+            $stmt->bindParam(":role", $role);
+            $stmt->bindParam(":gender", $gender);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            if ($e->getCode() == 23000) { return false; }
+            throw $e;
         }
-        throw $e; // Başka bir veritabanı hatası varsa fırlat (hata tespit için)
     }
-}
 
     public function login($username, $password) {
-        $query = "SELECT id, username, password, role FROM " . $this->table . " WHERE username = :username LIMIT 1";
+        $query = "SELECT id, username, password, role, gender FROM " . $this->table . " WHERE username = :username LIMIT 1";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(":username", $username);
         $stmt->execute();
@@ -43,6 +37,7 @@ class Auth {
                 $_SESSION['user_id'] = $row['id'];
                 $_SESSION['username'] = $row['username'];
                 $_SESSION['role'] = $row['role'];
+                $_SESSION['gender'] = $row['gender'];
                 return true;
             }
         }
@@ -57,6 +52,7 @@ class Auth {
         unset($_SESSION['user_id']);
         unset($_SESSION['username']);
         unset($_SESSION['role']);
+        unset($_SESSION['gender']);
         return true;
     }
 }
